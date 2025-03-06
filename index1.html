@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Replacement & Scheduling</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #4caf50;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 16px;
+        }
+        input {
+            background-color: #2a2a2a;
+            color: #fff;
+        }
+        button {
+            background-color: #4caf50;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #388e3c;
+        }
+        .result {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ffffff;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #4caf50;
+        }
+        .miss {
+            background-color: #ff4c4c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>Page Replacement (FIFO)</h2>
+            <input type="text" id="pageReferences" placeholder="Enter page references (comma-separated)">
+            <input type="number" id="frameCount" placeholder="Enter number of frames">
+            <button onclick="calculateFIFO()">Calculate</button>
+            <div class="result" id="fifoResult"></div>
+            <table id="fifoTable"></table>
+            <h3>Misses</h3>
+            <table id="missTable"></table>
+        </div>
+
+        <div class="card">
+            <h2>Scheduling (FCFS)</h2>
+            <input type="text" id="arrivalTimes" placeholder="Enter arrival times (comma-separated)">
+            <input type="text" id="burstTimes" placeholder="Enter burst times (comma-separated)">
+            <button onclick="calculateFCFS()">Calculate</button>
+            <div class="result" id="fcfsResult"></div>
+        </div>
+    </div>
+
+    <script>
+        function calculateFIFO() {
+            const pageReferences = document.getElementById('pageReferences').value.split(',').map(Number);
+            const frameCount = parseInt(document.getElementById('frameCount').value);
+            const frames = [];
+            let pageFaults = 0;
+            let tableHTML = '<tr><th>Step</th>';
+            let missTableHTML = '<tr><th>Miss Step</th><th>Page</th></tr>';
+            
+            for (let i = 0; i < frameCount; i++) {
+                tableHTML += `<th>Frame ${i + 1}</th>`;
+            }
+            tableHTML += '<th>Hit/Miss</th></tr>';
+            
+            for (let i = 0; i < pageReferences.length; i++) {
+                const page = pageReferences[i];
+                let isMiss = false;
+                
+                if (!frames.includes(page)) {
+                    if (frames.length < frameCount) {
+                        frames.push(page);
+                    } else {
+                        frames.shift();
+                        frames.push(page);
+                    }
+                    pageFaults++;
+                    isMiss = true;
+                }
+                
+                tableHTML += `<tr><td>${i + 1}</td>`;
+                for (let j = 0; j < frameCount; j++) {
+                    tableHTML += `<td>${frames[j] !== undefined ? frames[j] : ''}</td>`;
+                }
+                
+                if (isMiss) {
+                    tableHTML += `<td class='miss'>Miss</td></tr>`;
+                    missTableHTML += `<tr><td>${i + 1}</td><td>${page}</td></tr>`;
+                } else {
+                    tableHTML += `<td>Hit</td></tr>`;
+                }
+            }
+            document.getElementById('fifoResult').innerText = `Total Page Faults: ${pageFaults}`;
+            document.getElementById('fifoTable').innerHTML = tableHTML;
+            document.getElementById('missTable').innerHTML = missTableHTML;
+        }
+
+        function calculateFCFS() {
+            const arrivalTimes = document.getElementById('arrivalTimes').value.split(',').map(Number);
+            const burstTimes = document.getElementById('burstTimes').value.split(',').map(Number);
+
+            if (arrivalTimes.length !== burstTimes.length) {
+                alert('Arrival times and burst times must have the same length.');
+                return;
+            }
+
+            const n = arrivalTimes.length;
+            let completionTimes = new Array(n).fill(0);
+            let turnaroundTimes = new Array(n).fill(0);
+            let waitingTimes = new Array(n).fill(0);
+            let currentTime = 0;
+
+            for (let i = 0; i < n; i++) {
+                if (currentTime < arrivalTimes[i]) {
+                    currentTime = arrivalTimes[i];
+                }
+                completionTimes[i] = currentTime + burstTimes[i];
+                turnaroundTimes[i] = completionTimes[i] - arrivalTimes[i];
+                waitingTimes[i] = turnaroundTimes[i] - burstTimes[i];
+                currentTime += burstTimes[i];
+            }
+
+            let avgTurnaroundTime = (turnaroundTimes.reduce((a, b) => a + b, 0) / n).toFixed(2);
+            let avgWaitingTime = (waitingTimes.reduce((a, b) => a + b, 0) / n).toFixed(2);
+
+            document.getElementById('fcfsResult').innerHTML = `Average Turnaround Time: ${avgTurnaroundTime}<br>Average Waiting Time: ${avgWaitingTime}`;
+        }
+    </script>
+</body>
+</html>
